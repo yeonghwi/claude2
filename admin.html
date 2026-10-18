@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 페이지</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>관리자 페이지</h1>
+    <nav>
+      <a href="index.html">사이트로 가기</a>
+    </nav>
+    <div id="auth-menu"></div>
+  </header>
+
+  <main>
+    <!-- 관리자가 아닐 때 표시 -->
+    <section id="no-access" class="card hidden">
+      <h2>접근 권한 없음</h2>
+      <p>관리자 계정으로 <a href="login.html">로그인</a>해주세요.</p>
+    </section>
+
+    <!-- 관리자일 때 표시 -->
+    <div id="admin-area" class="hidden">
+      <section class="card">
+        <h2>공지사항 작성</h2>
+        <form id="notice-form">
+          <input id="title" placeholder="제목" required>
+          <textarea id="content" placeholder="내용" required></textarea>
+          <button type="submit">등록</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>공지사항 관리</h2>
+        <ul id="notice-list" class="list"></ul>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    async function init() {
+      const user = await renderAuthMenu();
+      if (!user) { show('no-access'); return; }
+
+      // admins 테이블에 내 id가 있으면 관리자
+      const { data } = await sb.from('admins').select('user_id').eq('user_id', user.id);
+      if (!data || data.length === 0) { show('no-access'); return; }
+
+      show('admin-area');
+      loadNotices();
+    }
+
+    function show(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    async function loadNotices() {
+      const { data } = await sb.from('notices').select('*').order('created_at', { ascending: false });
+      const list = document.getElementById('notice-list');
+      if (data.length === 0) { list.innerHTML = '<li class="empty">등록된 공지사항이 없습니다.</li>'; return; }
+
+      list.innerHTML = data.map(n => `
+        <li>
+          <strong>${esc(n.title)}</strong>
+          <span class="meta">${formatDate(n.created_at)}</span>
+          <button class="danger" onclick="deleteNotice(${n.id})">삭제</button>
+        </li>
+      `).join('');
+    }
+
+    document.getElementById('notice-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value;
+      const content = document.getElementById('content').value;
+
+      const { error } = await sb.from('notices').insert({ title, content });
+      if (error) { alert('등록 실패: ' + error.message); return; }
+
+      e.target.reset();
+      loadNotices();
+    };
+
+    async function deleteNotice(id) {
+      if (!confirm('삭제하시겠습니까?')) return;
+      const { error } = await sb.from('notices').delete().eq('id', id);
+      if (error) { alert('삭제 실패: ' + error.message); return; }
+      loadNotices();
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>자유게시판</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>우리 사이트</h1>
+    <nav>
+      <a href="index.html">공지사항</a>
+      <a href="board.html">자유게시판</a>
+    </nav>
+    <div id="auth-menu"></div>
+  </header>
+
+  <main>
+    <!-- 로그인한 회원에게만 표시 -->
+    <section id="write-area" class="card hidden">
+      <h2>글쓰기</h2>
+      <form id="post-form">
+        <input id="title" placeholder="제목" required>
+        <textarea id="content" placeholder="내용" required></textarea>
+        <button type="submit">등록</button>
+      </form>
+    </section>
+
+    <p id="login-hint" class="card hidden">
+      글을 쓰려면 <a href="login.html">로그인</a>하세요.
+    </p>
+
+    <section class="card">
+      <h2>자유게시판</h2>
+      <ul id="post-list" class="list"></ul>
+    </section>
+  </main>
+
+  <script>
+    let currentUser = null;
+
+    async function init() {
+      currentUser = await renderAuthMenu();
+      const target = currentUser ? 'write-area' : 'login-hint';
+      document.getElementById(target).classList.remove('hidden');
+      loadPosts();
+    }
+
+    async function loadPosts() {
+      const { data, error } = await sb.from('posts').select('*').order('created_at', { ascending: false });
+      const list = document.getElementById('post-list');
+      if (error) { list.innerHTML = `<li class="empty">불러오기 실패: ${esc(error.message)}</li>`; return; }
+      if (data.length === 0) { list.innerHTML = '<li class="empty">아직 글이 없습니다.</li>'; return; }
+
+      list.innerHTML = data.map(p => `
+        <li>
+          <details>
+            <summary>
+              ${esc(p.title)}
+              <span class="meta">${esc(p.author_email)} · ${formatDate(p.created_at)}</span>
+            </summary>
+            <p class="body">${esc(p.content)}</p>
+            ${currentUser && currentUser.id === p.user_id
+              ? `<button class="danger" onclick="deletePost(${p.id})">삭제</button>`
+              : ''}
+          </details>
+        </li>
+      `).join('');
+    }
+
+    document.getElementById('post-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const { error } = await sb.from('posts').insert({
+        title: document.getElementById('title').value,
+        content: document.getElementById('content').value,
+        author_email: currentUser.email,
+      });
+      if (error) { alert('등록 실패: ' + error.message); return; }
+
+      e.target.reset();
+      loadPosts();
+    };
+
+    async function deletePost(id) {
+      if (!confirm('삭제하시겠습니까?')) return;
+      const { error } = await sb.from('posts').delete().eq('id', id);
+      if (error) { alert('삭제 실패: ' + error.message); return; }
+      loadPosts();
+    }
+
+    init();
+  </script>
+</body>
+</html>

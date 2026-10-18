@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>우리 사이트</h1>
+    <nav>
+      <a href="index.html">공지사항</a>
+      <a href="board.html">자유게시판</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>로그인 / 회원가입</h2>
+      <form id="auth-form">
+        <input id="email" type="email" placeholder="이메일" required>
+        <input id="password" type="password" placeholder="비밀번호 (6자 이상)" minlength="6" required>
+        <button type="submit" id="login-btn">로그인</button>
+        <button type="button" id="signup-btn" class="secondary">회원가입</button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const emailEl = document.getElementById('email');
+    const passwordEl = document.getElementById('password');
+
+    // 로그인
+    document.getElementById('auth-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const { error } = await sb.auth.signInWithPassword({
+        email: emailEl.value,
+        password: passwordEl.value,
+      });
+      if (error) { alert('로그인 실패: ' + error.message); return; }
+      location.href = 'board.html';
+    };
+
+    // 회원가입
+    document.getElementById('signup-btn').onclick = async () => {
+      if (!emailEl.reportValidity() || !passwordEl.reportValidity()) return;
+      const { data, error } = await sb.auth.signUp({
+        email: emailEl.value,
+        password: passwordEl.value,
+      });
+      if (error) { alert('회원가입 실패: ' + error.message); return; }
+
+      // 이메일 인증이 켜져 있으면 session이 없음
+      if (data.session) {
+        location.href = 'board.html';
+      } else {
+        alert('가입 완료! 이메일로 받은 인증 링크를 누른 뒤 로그인하세요.');
+      }
+    };
+  </script>
+</body>
+</html>

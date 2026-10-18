@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>공지사항</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/app.js"></script>
+</head>
+<body class="news-page">
+  <main class="news">
+    <p class="news-label">KOPO NEWS</p>
+    <div class="news-head">
+      <h1 class="news-title">폴리텍 뉴스</h1>
+      <span class="news-tab">공지사항</span>
+    </div>
+
+    <section class="news-box">
+      <ul id="notice-list" class="news-list"></ul>
+    </section>
+
+    <div class="news-links">
+      <a href="board.html">자유게시판 →</a>
+    </div>
+  </main>
+
+  <script>
+    async function loadNotices() {
+      const { data, error } = await sb
+        .from('notices')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      const list = document.getElementById('notice-list');
+      if (error) { list.innerHTML = `<li class="empty">불러오기 실패: ${esc(error.message)}</li>`; return; }
+      if (data.length === 0) { list.innerHTML = '<li class="empty">등록된 공지사항이 없습니다.</li>'; return; }
+
+      // 한 줄을 누르면 내용이 펼쳐지도록 <details> 사용
+      list.innerHTML = data.map(n => `
+        <li>
+          <details>
+            <summary>
+              <span class="badge">공지</span>
+              <span class="news-subject">${esc(n.title)}</span>
+              <span class="news-date">${formatDotDate(n.created_at)}</span>
+            </summary>
+            <p class="news-body">${esc(n.content)}</p>
+          </details>
+        </li>
+      `).join('');
+    }
+
+    loadNotices();
+  </script>
+</body>
+</html>
