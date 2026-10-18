@@ -1,6 +1,6 @@
 // Supabase 프로젝트 설정 > API 에서 값을 복사해 넣으세요.
-const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
+const SUPABASE_URL = 'https://jvywkxcvnlrwepnirqam.supabase.co/rest/v1/';
+const SUPABASE_ANON_KEY = 'sb_publishable_tbMt9tTdh8v5OkWdur4AmQ_xAoCETon';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
